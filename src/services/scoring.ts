@@ -8,11 +8,14 @@ import type { GoPlusAddressData, ScoringResult, RiskLevel } from "../types";
  * unsafe regardless of everything else. So flags are grouped into tiers and
  * the verdict is driven by the worst tier hit:
  *
- *   CRITICAL flag hit → score 0,  level CRITICAL  (confirmed malicious history)
- *   HIGH flag hit     → score ≤40, level HIGH     (strong adverse indicators)
- *   CAUTION flag hit  → score ≤75, level MODERATE (suspicion, not confirmation)
- *   nothing hit       → score 100, level LOW      (no adverse records — NOT a
- *                                                  guarantee of safety)
+ *   CRITICAL flag hit → score 0,     level CRITICAL (confirmed malicious history)
+ *   HIGH flag hit     → score 5-40,  level HIGH     (strong adverse indicators)
+ *   CAUTION flag hit  → score 55-75, level MODERATE (suspicion, not confirmation)
+ *   nothing hit       → score 100,   level LOW      (no adverse records — NOT a
+ *                                                    guarantee of safety)
+ *
+ * Score bands never overlap across tiers, so `risk_score < N` thresholds
+ * order identically to risk_level — consumers can use either.
  *
  * Field absence (GoPlus omits fields it has no data for) never counts
  * against an address; it is surfaced separately by the mapper.
@@ -44,7 +47,7 @@ const CAUTION_FLAGS: Array<{ key: keyof GoPlusAddressData; label: string }> = [
   { key: "reinit", label: "Redeployable contract (reinit)" },
 ];
 
-const HIGH_DEDUCTION = 40;
+const HIGH_DEDUCTION = 15;
 const CAUTION_DEDUCTION = 15;
 
 export function calculateAddressRisk(data: GoPlusAddressData): ScoringResult {
@@ -89,9 +92,12 @@ export function calculateAddressRisk(data: GoPlusAddressData): ScoringResult {
     score = 0;
     level = "CRITICAL";
   } else if (flagged.high.length > 0) {
-    score = Math.max(5, 60 - HIGH_DEDUCTION * (flagged.high.length - 1));
+    // 40 / 25 / 10 / 5... — always below the MODERATE floor (55) so score
+    // ordering can never contradict level ordering.
+    score = Math.max(5, 40 - HIGH_DEDUCTION * (flagged.high.length - 1));
     level = "HIGH";
   } else if (flagged.caution.length > 0) {
+    // 75 / 60 / 55 — always below LOW (100) and above the HIGH ceiling (40).
     score = Math.max(55, 90 - CAUTION_DEDUCTION * flagged.caution.length);
     level = "MODERATE";
   } else {

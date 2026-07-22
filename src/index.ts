@@ -4,7 +4,11 @@ import { declareDiscoveryExtension } from "@x402/extensions/bazaar";
 import { declareSIWxExtension } from "@x402/extensions/sign-in-with-x";
 import type { RoutesConfig } from "@x402/core/server";
 import type { Env } from "./types";
-import { fetchAddressSecurity, ADDRESS_PATTERN } from "./services/goplus";
+import {
+  fetchAddressSecurity,
+  ADDRESS_PATTERN,
+  SUPPORTED_CHAIN_IDS,
+} from "./services/goplus";
 import {
   handleMcpRequest,
   MCP_TOOLS,
@@ -50,6 +54,7 @@ const ADDRESS_ROUTE = {
       },
       chainId: {
         type: "string",
+        enum: SUPPORTED_CHAIN_IDS,
         description:
           "Optional query param: chain ID to scope the lookup (e.g. '1', '8453'). Omit for cross-chain reputation.",
       },
@@ -62,7 +67,9 @@ const ADDRESS_ROUTE = {
     is_contract: false,
     risk_score: 100,
     risk_level: "LOW",
+    flags: { sanctioned: false, phishing_activities: false, mixer: false },
     adverse_findings: [],
+    data_source: null,
     summary:
       "No adverse records found in security databases. Note: a clean history does not guarantee safety — newly created scam addresses have no records yet.",
     cached: false,
@@ -355,9 +362,12 @@ app.get("/api/v1/address/:address", async (c) => {
       400,
     );
   }
-  if (chainId !== null && !/^\d+$/.test(chainId)) {
+  if (chainId !== null && !SUPPORTED_CHAIN_IDS.includes(chainId)) {
     return c.json(
-      { error: "invalid_chain", message: "chainId must be numeric." },
+      {
+        error: "invalid_chain",
+        message: `Unsupported chainId. Allowed: ${SUPPORTED_CHAIN_IDS.join(", ")} (or omit for cross-chain reputation).`,
+      },
       400,
     );
   }

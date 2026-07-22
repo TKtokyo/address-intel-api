@@ -10,11 +10,12 @@ X402_NETWORK = "eip155:84532"
 PUBLIC_ORIGIN = "https://address-intel-api.tatsu77.workers.dev"
 # SIWX_SESSION_TTL_SECONDS = "3600"  # optional; default 3600 (matches cache TTL)
 
-# KV namespace for address data cache + SIWx sessions
-# (id filled by `wrangler kv namespace create ADDRESS_CACHE`)
+# KV namespace for address data cache + SIWx sessions.
+# TESTNET-ONLY namespace — deliberately separate from production so Sepolia
+# "payments" can never mint SIWx sessions valid against mainnet.
 [[kv_namespaces]]
 binding = "ADDRESS_CACHE"
-id = "84fc6b877dbb439d9963f61cb358c48d"
+id = "a60ef79e47bf46cfbcae769729b7fb4b"
 
 # --- Production environment: Base mainnet ---
 [env.production]

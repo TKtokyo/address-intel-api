@@ -11,7 +11,11 @@ import { createPaymentWrapper } from "@x402/mcp";
 import type { MCPToolCallback, WrappedToolResult, ToolResult } from "@x402/mcp";
 import { declareDiscoveryExtension } from "@x402/extensions/bazaar";
 import type { Env } from "../types";
-import { fetchAddressSecurity, ADDRESS_PATTERN } from "../services/goplus";
+import {
+  fetchAddressSecurity,
+  ADDRESS_PATTERN,
+  SUPPORTED_CHAIN_IDS,
+} from "../services/goplus";
 import {
   getResourceServer,
   buildAccepts,
@@ -71,6 +75,7 @@ export const MCP_TOOLS: McpToolDef[] = [
         },
         chainId: {
           type: "string",
+          enum: SUPPORTED_CHAIN_IDS,
           description:
             "Optional chain ID to scope the lookup (e.g. '1' Ethereum, '8453' Base). Omit for cross-chain reputation.",
         },
@@ -128,9 +133,12 @@ function makeCheckAddressHandler(
         true,
       );
     }
-    if (chainId !== null && !/^\d+$/.test(chainId)) {
+    if (chainId !== null && !SUPPORTED_CHAIN_IDS.includes(chainId)) {
       return textResult(
-        { error: "invalid_chain", message: "chainId must be numeric." },
+        {
+          error: "invalid_chain",
+          message: `Unsupported chainId. Allowed: ${SUPPORTED_CHAIN_IDS.join(", ")} (or omit for cross-chain reputation).`,
+        },
         true,
       );
     }

@@ -15,6 +15,24 @@ const GOPLUS_BASE = "https://api.gopluslabs.io/api/v1/address_security";
 export const ADDRESS_PATTERN = /^0x[a-fA-F0-9]{40}$/;
 
 /**
+ * chainId allowlist (major GoPlus-supported EVM chains). Bounding this
+ * matters because each (address, chainId) pair is a distinct cache key and
+ * a distinct upstream call — an unbounded chainId would let one paid SIWx
+ * session enumerate arbitrary values and drain upstream quota for free.
+ */
+export const SUPPORTED_CHAIN_IDS = [
+  "1", // Ethereum
+  "10", // Optimism
+  "56", // BNB Chain
+  "137", // Polygon
+  "250", // Fantom
+  "324", // zkSync Era
+  "8453", // Base
+  "42161", // Arbitrum
+  "43114", // Avalanche
+];
+
+/**
  * Fetch address security data from GoPlus.
  * chainId is optional: without it GoPlus returns cross-chain reputation.
  */
@@ -65,9 +83,10 @@ export async function fetchGoPlusAddress(
   return { status: "ok", data: body.result };
 }
 
-/** Convert GoPlus "0"/"1" string to boolean, null if field missing */
+/** Convert GoPlus "0"/"1" string to boolean; null when the field is missing
+ * or empty (both mean "no data", which must never read as "checked clean"). */
 function flag(value: string | undefined): boolean | null {
-  if (value === undefined || value === null) return null;
+  if (value === undefined || value === null || value === "") return null;
   return value === "1";
 }
 
@@ -152,7 +171,7 @@ export async function fetchAddressSecurity(
     address: normalized,
     chain_id: chainId,
     is_contract:
-      data.contract_address === undefined
+      data.contract_address === undefined || data.contract_address === ""
         ? null
         : data.contract_address === "1",
     risk_score: scoring.score,
