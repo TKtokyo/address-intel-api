@@ -1,8 +1,10 @@
 # Address Intel API
 
+> **Discontinued (October 2026).** This service has been shut down and its hosted endpoint is no longer available. The repository is archived and kept for reference only; it is not maintained.
+
 x402-powered paid API that returns counterparty risk checks for any EVM address: confirmed malicious-history flags, tiered risk scoring, and plain-language summaries.
 
-**Production:** `https://address-intel-api.tatsu77.workers.dev`
+**Former endpoint (offline):** `https://address-intel-api.tatsu77.workers.dev`
 
 ## Why
 
